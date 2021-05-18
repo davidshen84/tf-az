@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+          - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aspnet-sample
+  labels:
+    app: aspnet-sample
+spec:
+  selector:
+    matchLabels:
+      app: aspnet-sample
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: aspnet-sample
+    spec:
+      containers:
+      - name: aspnet-sample
+        image: mcr.microsoft.com/dotnet/samples:aspnetapp
+        ports:
+          - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aspnet-sample
+spec:
+  selector:
+    app: aspnet-sample
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: demo-gateway
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+      - "*"
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: demo-vs
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - demo-gateway
+  http:
+    - name: "nginx-service-routes"
+      match:
+        - uri:
+            prefix: "/nginx"
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: nginx-service
+            port:
+              number: 80
+    - name: "echo-server-routes"
+      match:
+        - uri:
+            prefix: "/aspnet"
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: aspnet-sample
+            port:
+              number: 80
