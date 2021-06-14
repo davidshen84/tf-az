@@ -16,7 +16,7 @@ https://confluence.quantium.com.au/display/~DShen/IIP+Cloud+project+on+boarding
 
 3. apply aks.yaml
 
-        kubectl apply -f aks.yaml
+        kubectl apply -f aks.yaml --namespace demo
 
 4. get the ingress gateway external ip
 
