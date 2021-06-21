@@ -14,15 +14,20 @@ provider "azurerm" {
   features {}
 }
 
-module "aks-1" {
-  source = "./modules/aks"
-
-  prefix = "demo-1"
-  location = var.resource_location
-  cluster_name = "demo-1"
-  pool_size = 3
-  vm_size = var.aks_vm_size
+resource "azurerm_resource_group" "main" {
+  name     = "q-resources"
+  location = "Australia East"
 }
+
+# module "aks-1" {
+#   source = "./modules/aks"
+
+#   prefix = "demo-1"
+#   location = var.resource_location
+#   cluster_name = "demo-1"
+#   pool_size = 3
+#   vm_size = var.aks_vm_size
+# }
 
 # module "aks-2" {
 #   source = "./modules/aks"
@@ -34,3 +39,22 @@ module "aks-1" {
 #   vm_size = var.aks_vm_size
 # }
 
+resource "random_string" "store_id" {
+  keepers = {
+    rg = azurerm_resource_group.main.name
+  }
+
+  length = 24
+  lower = true
+  upper = false
+  special = false
+  number = true
+}
+
+module "storage-container" {
+  source = "./modules/storage"
+
+  name = "${random_string.store_id.result}"
+  container_name = "blobs"
+  rg = azurerm_resource_group.main
+}
