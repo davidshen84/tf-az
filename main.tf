@@ -58,3 +58,14 @@ module "storage-container" {
   container_name = "blobs"
   rg = azurerm_resource_group.main
 }
+
+module "mssql" {
+  source = "./modules/mssql"
+
+  rg = azurerm_resource_group.main
+  server_name = "mssql-toy1"
+  database_name = "toydb1"
+  admin_name = "toyadmin"
+  admin_password = "admin!Passw0rd"
+  sku_name = "GP_Gen5_2"
+}
