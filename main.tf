@@ -51,21 +51,49 @@ resource "random_string" "store_id" {
   number = true
 }
 
-module "storage-container" {
+resource "random_string" "store_id_2" {
+  keepers = {
+    rg = azurerm_resource_group.main.name
+  }
+
+  length = 24
+  lower = true
+  upper = false
+  special = false
+  number = true
+}
+
+module "storage_container" {
   source = "./modules/storage"
 
-  name = "${random_string.store_id.result}"
-  container_name = "blobs"
+  account = random_string.store_id.result
+  name = "blob"
   rg = azurerm_resource_group.main
 }
 
-module "mssql" {
-  source = "./modules/mssql"
-
-  rg = azurerm_resource_group.main
-  server_name = "mssql-toy1"
-  database_name = "toydb1"
-  admin_name = "toyadmin"
-  admin_password = "admin!Passw0rd"
-  sku_name = "GP_Gen5_2"
+resource "azurerm_storage_blob" "test_blob" {
+  name = "a-blob"
+  storage_account_name = random_string.store_id.result
+  storage_container_name = "blob"
+  type = "Block"
+  source = "./README.md"
 }
+
+module "storage_container_2" {
+  source = "./modules/storage"
+
+  account = random_string.store_id_2.result
+  name = "blob"
+  rg = azurerm_resource_group.main
+}
+
+# module "mssql" {
+#   source = "./modules/mssql"
+
+#   rg = azurerm_resource_group.main
+#   server_name = "mssql-toy1"
+#   database_name = "toydb1"
+#   admin_name = "toyadmin"
+#   admin_password = "admin!Passw0rd"
+#   sku_name = "GP_Gen5_2"
+# }
