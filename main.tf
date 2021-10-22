@@ -15,7 +15,7 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "main" {
-  name     = "q-resources"
+  name     = "demo-rg"
   location = "Australia East"
 }
 
@@ -63,29 +63,29 @@ resource "random_string" "store_id_2" {
   number = true
 }
 
-module "storage_container" {
-  source = "./modules/storage"
+# module "storage_container" {
+#   source = "./modules/storage"
 
-  account = random_string.store_id.result
-  name = "blob"
-  rg = azurerm_resource_group.main
-}
+#   account = random_string.store_id.result
+#   name = "blob"
+#   rg = azurerm_resource_group.main
+# }
 
-resource "azurerm_storage_blob" "test_blob" {
-  name = "a-blob"
-  storage_account_name = random_string.store_id.result
-  storage_container_name = "blob"
-  type = "Block"
-  source = "./README.md"
-}
+# resource "azurerm_storage_blob" "test_blob" {
+#   name = "a-blob"
+#   storage_account_name = random_string.store_id.result
+#   storage_container_name = "blob"
+#   type = "Block"
+#   source = "./README.md"
+# }
 
-module "storage_container_2" {
-  source = "./modules/storage"
+# module "storage_container_2" {
+#   source = "./modules/storage"
 
-  account = random_string.store_id_2.result
-  name = "blob"
-  rg = azurerm_resource_group.main
-}
+#   account = random_string.store_id_2.result
+#   name = "blob"
+#   rg = azurerm_resource_group.main
+# }
 
 # module "mssql" {
 #   source = "./modules/mssql"
@@ -97,3 +97,11 @@ module "storage_container_2" {
 #   admin_password = "admin!Passw0rd"
 #   sku_name = "GP_Gen5_2"
 # }
+
+module "appi" {
+  source = "./modules/appinsights"
+
+  rg = azurerm_resource_group.main
+  name = "appi-1"
+  location = var.resource_location
+}
