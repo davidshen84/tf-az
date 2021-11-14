@@ -28,6 +28,11 @@ output "acr-server" {
   value = module.acr.server
 }
 
-output "acr-admin" {
-  value = module.acr.admin
+output "app-client-id" {
+  value = azuread_application.main.application_id
+}
+
+output "sp-password" {
+  sensitive = true
+  value = module.sp.password
 }

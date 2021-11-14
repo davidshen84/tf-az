@@ -14,9 +14,16 @@ provider "azurerm" {
   features {}
 }
 
+data "azuread_client_config" "current" {}
+
 resource "azurerm_resource_group" "main" {
   name     = "demo-rg"
   location = "Australia East"
+}
+
+resource "azuread_application" "main" {
+  display_name = "main-app"
+  owners       = [data.azuread_client_config.current.object_id]
 }
 
 # module "aks-1" {
@@ -44,11 +51,11 @@ resource "random_string" "rndstr" {
     rg = azurerm_resource_group.main.name
   }
 
-  length = 7
-  lower = true
-  upper = false
+  length  = 7
+  lower   = true
+  upper   = false
   special = false
-  number = true
+  number  = true
 }
 
 # module "storage_container" {
@@ -97,7 +104,19 @@ resource "random_string" "rndstr" {
 module "acr" {
   source = "./modules/acr"
 
-  rg = azurerm_resource_group.main
+  rg   = azurerm_resource_group.main
   name = "acr${random_string.rndstr.result}"
   # location = null
+}
+
+module "sp" {
+  source = "./modules/sp"
+  app    = azuread_application.main
+  owners = [data.azuread_client_config.current.object_id]
+}
+
+resource "azurerm_role_assignment" "acr-contributer" {
+  scope                = module.acr.id
+  role_definition_name = "Contributor"
+  principal_id         = module.sp.id
 }
