@@ -19,7 +19,15 @@
 #   value = module.storage_container.access-key
 # }
 
-output "appi-key" {
-  sensitive = true
-  value = module.appi.instrumentation_key
+# output "appi-key" {
+#   sensitive = true
+#   value = module.appi.instrumentation_key
+# }
+
+output "acr-server" {
+  value = module.acr.server
+}
+
+output "acr-admin" {
+  value = module.acr.admin
 }

@@ -39,24 +39,12 @@ resource "azurerm_resource_group" "main" {
 #   vm_size = var.aks_vm_size
 # }
 
-resource "random_string" "store_id" {
+resource "random_string" "rndstr" {
   keepers = {
     rg = azurerm_resource_group.main.name
   }
 
-  length = 24
-  lower = true
-  upper = false
-  special = false
-  number = true
-}
-
-resource "random_string" "store_id_2" {
-  keepers = {
-    rg = azurerm_resource_group.main.name
-  }
-
-  length = 24
+  length = 7
   lower = true
   upper = false
   special = false
@@ -98,10 +86,18 @@ resource "random_string" "store_id_2" {
 #   sku_name = "GP_Gen5_2"
 # }
 
-module "appi" {
-  source = "./modules/appinsights"
+# module "appi" {
+#   source = "./modules/appinsights"
+
+#   rg = azurerm_resource_group.main
+#   name = "appi-1"
+#   location = var.resource_location
+# }
+
+module "acr" {
+  source = "./modules/acr"
 
   rg = azurerm_resource_group.main
-  name = "appi-1"
-  location = var.resource_location
+  name = "acr${random_string.rndstr.result}"
+  # location = null
 }
