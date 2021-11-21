@@ -1,115 +1,114 @@
 #+TITLE: Manage Azure resources using Terraform
 #+AUTHOR: David S
-#+STARTUP: content
+#+STARTUP: overview
 
 * README
-Terraform scripts and documents that I use to provision resources in
-Azure cloud.
+  Terraform scripts and documents that I use to provision resources in
+  Azure cloud.
 
 * Install Istio in AKS
 
-1. install
+  1. install
+     #+begin_src shell
+       istioctl install --set profile=default
+     #+end_src
 
-   #+begin_src shell
-     istioctl install --set profile=default
-   #+end_src
+  2. create and label a namespace in Kubernetes
 
-2. create and label a namespace in Kubernetes
+     #+begin_src shell
+       kubectl create namespace demo
+       kubectl label namespace demo istio-injection=enabled --overwrite
+     #+end_src
 
-   #+begin_src shell
-     kubectl create namespace demo
-     kubectl label namespace demo istio-injection=enabled --overwrite
-   #+end_src
+  3. apply aks.yaml
 
-3. apply aks.yaml
+     #+begin_src shell
+       kubectl apply --namespace demo -f ./modules/aks/k8s-example/aks.yaml
+     #+end_src
 
-   #+begin_src shell
-     kubectl apply --namespace demo -f ./modules/aks/k8s-example/aks.yaml
-   #+end_src
+  4. get the ingress gateway external ip
 
-4. get the ingress gateway external ip
-
-   #+begin_src shell
-     kubectl describe -n istio-system service/istio-ingressgateway
-   #+end_src
+     #+begin_src shell
+       kubectl describe -n istio-system service/istio-ingressgateway
+     #+end_src
 
 * Create encrypted Github secret
-:PROPERTIES:
-:header-args: :var owner="davidshen84"
-:header-args+: :var repo="tf-az"
-:header-args+: :var pat="pat"
-:END:
+  :PROPERTIES:
+  :header-args: :var owner="davidshen84"
+  :header-args+: :var repo="tf-az"
+  :header-args+: :var pat="pat"
+  :END:
 
-Each Github repository has a encryptic key pair. Only the public key
-can be obtained by the user. So only github can decrept the values. We
-can encrypt our *secrets* and commit them in the code. We can also use
-Terraform to create/update repository secrets.
+  Each Github repository has a encryptic key pair. Only the public key
+  can be obtained by the user. So only github can decrept the
+  values. We can encrypt our *secrets* and commit them in the code. We
+  can also use Terraform to create/update repository secrets.
 
 ** Git repository public key
-The *PAT* should have the `repo:public_repo` permission.
+   The *PAT* should have the `repo:public_repo` permission.
 
-#+name: token
-#+begin_src shell
-  echo -n "${owner}:${pat}" | openssl base64 -A
-#+end_src
+   #+name: token
+   #+begin_src shell
+     echo -n "${owner}:${pat}" | openssl base64 -A
+   #+end_src
 
-#+name: public_key
-#+begin_src http :var token=token :pretty
-  GET https://api.github.com/repos/${owner}/${repo}/actions/secrets/public-key
-  Authorization: Basic ${token}
-#+end_src
+   #+name: public_key
+   #+begin_src http :var token=token :pretty
+     GET https://api.github.com/repos/${owner}/${repo}/actions/secrets/public-key
+     Authorization: Basic ${token}
+   #+end_src
 
-#+name: key_id
-#+begin_src shell :var f=public_key
-  jq '.key_id'<<EOF
-  ${f}
-  EOF
-#+end_src
+   #+name: key_id
+   #+begin_src shell :var f=public_key
+     jq '.key_id'<<EOF
+     ${f}
+     EOF
+   #+end_src
 
-#+name: key
-#+begin_src shell :var f=public_key
-  jq .'key'<<EOF
-  ${f}
-  EOF
-#+end_src
+   #+name: key
+   #+begin_src shell :var f=public_key
+     jq .'key'<<EOF
+     ${f}
+     EOF
+   #+end_src
 
 ** Encrypt values using the public key
-This simple python script can encrypt the `secret_value` using the
-*public key* we obtained from Github. The `SealedBox` object will add
-*salt* automatically, so the results are different everytime even with
-the same public key and value.
+   This simple python script can encrypt the `secret_value` using the
+   *public key* we obtained from Github. The `SealedBox` object will
+   add *salt* automatically, so the results are different everytime
+   even with the same public key and value.
 
-#+name: encrypted_secret
-#+begin_src python :var public_key=key :results verbatim
-  from base64 import b64encode
-  from nacl import encoding, public
-  import json
+   #+name: encrypted_secret
+   #+begin_src python :var public_key=key :results verbatim
+     from base64 import b64encode
+     from nacl import encoding, public
+     import json
 
-  secret_value = 'ok'
+     secret_value = 'ok'
 
-  public_key = public.PublicKey(public_key.encode('utf-8'), encoding.Base64Encoder())
-  sealed_box = public.SealedBox(public_key)
-  encrypted = sealed_box.encrypt(secret_value.encode('utf-8'))
+     public_key = public.PublicKey(public_key.encode('utf-8'), encoding.Base64Encoder())
+     sealed_box = public.SealedBox(public_key)
+     encrypted = sealed_box.encrypt(secret_value.encode('utf-8'))
 
-  return b64encode(encrypted).decode('utf-8')
-#+end_src
+     return b64encode(encrypted).decode('utf-8')
+   #+end_src
 
 ** Create new secret
-#+begin_src http :pretty :var token=token secret=encrypted_secret key_id=key_id
-  PUT https://api.github.com/repos/${owner}/${repo}/actions/secrets/OK_SECRET
-  Authorization: Basic ${token}
-  Accept: application/vnd.github.v3+json
+   #+begin_src http :pretty :var token=token secret=encrypted_secret key_id=key_id
+     PUT https://api.github.com/repos/${owner}/${repo}/actions/secrets/OK_SECRET
+     Authorization: Basic ${token}
+     Accept: application/vnd.github.v3+json
 
-  {
-    "key_id": "${key_id}",
-    "encrypted_value": "${secret}"
-  }
+     {
+       "key_id": "${key_id}",
+       "encrypted_value": "${secret}"
+     }
 
-#+end_src
+   #+end_src
 
-
-#+begin_src http :pretty :var token=token
-  GET https://api.github.com/repos/${owner}/${repo}/actions/secrets
-  Authorization: Basic ${token}
-#+end_src
+** List secrets
+   #+begin_src http :pretty :var token=token
+     GET https://api.github.com/repos/${owner}/${repo}/actions/secrets
+     Authorization: Basic ${token}
+   #+end_src
 
