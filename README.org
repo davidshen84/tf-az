@@ -1,8 +1,10 @@
-#+TITLE: github rest api
+#+TITLE: Manage Azure resources using Terraform
 #+AUTHOR: David S
 #+STARTUP: content
 
 * README
+Terraform scripts and documents that I use to provision resources in
+Azure cloud.
 
 * Install Istio in AKS
 
