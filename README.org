@@ -3,18 +3,47 @@
 #+STARTUP: content
 
 * README
-Each Github repository has a encryptic key pair. Only the public key
-can be obtained by the user. So only github can decrept the values. We
-can encrypt our *secrets* and commit them in the code. We can also use
-Terraform to create/update repository secrets.
 
-* Git repository public key
+* Install Istio in AKS
+
+1. install
+
+   #+begin_src shell
+     istioctl install --set profile=default
+   #+end_src
+
+2. create and label a namespace in Kubernetes
+
+   #+begin_src shell
+     kubectl create namespace demo
+     kubectl label namespace demo istio-injection=enabled --overwrite
+   #+end_src
+
+3. apply aks.yaml
+
+   #+begin_src shell
+     kubectl apply --namespace demo -f ./modules/aks/k8s-example/aks.yaml
+   #+end_src
+
+4. get the ingress gateway external ip
+
+   #+begin_src shell
+     kubectl describe -n istio-system service/istio-ingressgateway
+   #+end_src
+
+* Create encrypted Github secret
 :PROPERTIES:
 :header-args: :var owner="davidshen84"
 :header-args+: :var repo="tf-az"
 :header-args+: :var pat="pat"
 :END:
 
+Each Github repository has a encryptic key pair. Only the public key
+can be obtained by the user. So only github can decrept the values. We
+can encrypt our *secrets* and commit them in the code. We can also use
+Terraform to create/update repository secrets.
+
+** Git repository public key
 The *PAT* should have the `repo:public_repo` permission.
 
 #+name: token
@@ -42,7 +71,11 @@ The *PAT* should have the `repo:public_repo` permission.
   EOF
 #+end_src
 
-* Encrypt values using the public key
+** Encrypt values using the public key
+This simple python script can encrypt the `secret_value` using the
+*public key* we obtained from Github. The `SealedBox` object will add
+*salt* automatically, so the results are different everytime even with
+the same public key and value.
 
 #+name: encrypted_secret
 #+begin_src python :var public_key=key :results verbatim
@@ -59,7 +92,7 @@ The *PAT* should have the `repo:public_repo` permission.
   return b64encode(encrypted).decode('utf-8')
 #+end_src
 
-* Create new secret
+** Create new secret
 #+begin_src http :pretty :var token=token secret=encrypted_secret key_id=key_id
   PUT https://api.github.com/repos/${owner}/${repo}/actions/secrets/OK_SECRET
   Authorization: Basic ${token}
