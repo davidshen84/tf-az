@@ -36,7 +36,6 @@
   :PROPERTIES:
   :header-args: :var owner="davidshen84"
   :header-args+: :var repo="tf-az"
-  :header-args+: :var pat="pat"
   :END:
 
   Each Github repository has a encryptic key pair. Only the public key
@@ -45,17 +44,11 @@
   can also use Terraform to create/update repository secrets.
 
 ** Git repository public key
-   The *PAT* should have the `repo:public_repo` permission.
-
-   #+name: token
-   #+begin_src shell
-     echo -n "${owner}:${pat}" | openssl base64 -A
-   #+end_src
+   Setup the [[https://github.com/cli/cli][Github CLI]].
 
    #+name: public_key
-   #+begin_src http :var token=token :pretty
-     GET https://api.github.com/repos/${owner}/${repo}/actions/secrets/public-key
-     Authorization: Basic ${token}
+   #+begin_src sh :wrap src json :results verbatim
+     gh api repos/${owner}/${repo}/actions/secrets/public-key
    #+end_src
 
    #+name: key_id
@@ -94,21 +87,18 @@
    #+end_src
 
 ** Create new secret
-   #+begin_src http :pretty :var token=token secret=encrypted_secret key_id=key_id
-     PUT https://api.github.com/repos/${owner}/${repo}/actions/secrets/OK_SECRET
-     Authorization: Basic ${token}
-     Accept: application/vnd.github.v3+json
-
+   #+begin_src sh :var secret_value=encrypted_secret key_id=key_id secret_name='S1
+     cat<<EOF | gh api -X PUT repos/${owner}/${repo}/actions/secrets/${secret_name} --input -
      {
        "key_id": "${key_id}",
-       "encrypted_value": "${secret}"
+       "encrypted_value": "${secret_value}"
      }
+     EOF
 
    #+end_src
 
 ** List secrets
-   #+begin_src http :pretty :var token=token
-     GET https://api.github.com/repos/${owner}/${repo}/actions/secrets
-     Authorization: Basic ${token}
+   #+begin_src sh :results value code :wrap example json
+     gh api repos/${owner}/${repo}/actions/secrets
    #+end_src
 
