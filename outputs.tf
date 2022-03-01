@@ -24,15 +24,20 @@
 #   value = module.appi.instrumentation_key
 # }
 
-output "acr-server" {
-  value = module.acr.server
-}
+# output "acr-server" {
+#   value = module.acr.server
+# }
 
-output "app-client-id" {
-  value = azuread_application.main.application_id
-}
+# output "app-client-id" {
+#   value = azuread_application.main.application_id
+# }
 
-output "sp-password" {
+# output "sp-password" {
+#   sensitive = true
+#   value = module.sp.password
+# }
+
+output "cosmos-mongodb-connection-strings" {
   sensitive = true
-  value = module.sp.password
+  value     = module.mongodb.connection_strings
 }

@@ -2,11 +2,11 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "=2.58.0"
+      version = "=2.97.0"
     }
   }
 
-  required_version = ">= 0.14.9"
+  required_version = ">= 1.1.6"
 }
 
 # Configure the Microsoft Azure Provider
@@ -21,10 +21,10 @@ resource "azurerm_resource_group" "main" {
   location = "Australia East"
 }
 
-resource "azuread_application" "main" {
-  display_name = "main-app"
-  owners       = [data.azuread_client_config.current.object_id]
-}
+# resource "azuread_application" "main" {
+#   display_name = "main-app"
+#   owners       = [data.azuread_client_config.current.object_id]
+# }
 
 # module "aks-1" {
 #   source = "./modules/aks"
@@ -101,22 +101,29 @@ resource "random_string" "rndstr" {
 #   location = var.resource_location
 # }
 
-module "acr" {
-  source = "./modules/acr"
+# module "acr" {
+#   source = "./modules/acr"
 
-  rg   = azurerm_resource_group.main
-  name = "acr${random_string.rndstr.result}"
-  # location = null
-}
+#   rg   = azurerm_resource_group.main
+#   name = "acr${random_string.rndstr.result}"
+#   # location = null
+# }
 
-module "sp" {
-  source = "./modules/sp"
-  app    = azuread_application.main
-  owners = [data.azuread_client_config.current.object_id]
-}
+# module "sp" {
+#   source = "./modules/sp"
+#   app    = azuread_application.main
+#   owners = [data.azuread_client_config.current.object_id]
+# }
 
-resource "azurerm_role_assignment" "acr-contributer" {
-  scope                = module.acr.id
-  role_definition_name = "Contributor"
-  principal_id         = module.sp.id
+# resource "azurerm_role_assignment" "acr-contributer" {
+#   scope                = module.acr.id
+#   role_definition_name = "Contributor"
+#   principal_id         = module.sp.id
+# }
+
+module "mongodb" {
+  source = "./modules/cosmos_mongo"
+
+  rg           = azurerm_resource_group.main
+  account_name = random_string.rndstr.result
 }

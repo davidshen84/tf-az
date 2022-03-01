@@ -11,7 +11,7 @@ resource "azurerm_cosmosdb_account" "account" {
   location            = var.rg.location
   resource_group_name = var.rg.name
   offer_type          = "Standard"
-  kind                = "GlobalDocumentDB"
+  kind                = "MongoDB"
 
   enable_automatic_failover = true
 
@@ -27,21 +27,29 @@ resource "azurerm_cosmosdb_account" "account" {
     name = "MongoDBv3.4"
   }
 
+  capabilities {
+    name = "EnableMongo"
+  }
+  
   consistency_policy {
     consistency_level       = "BoundedStaleness"
     max_interval_in_seconds = 10
     max_staleness_prefix    = 200
   }
 
+  enable_free_tier = true
+  
   geo_location {
     location          = var.rg.location
     failover_priority = 0
   }
+
+  capacity {
+    total_throughput_limit = 100
+  }
 }
 
-resource "azurerm_cosmosdb_sql_database" "sqldb" {
-  name                = var.sql_database_name
-  resource_group_name = var.rg.name
-  account_name        = azurerm_cosmosdb_account.name
-  throughput          = 400
+output "connection_strings" {
+  sensitive = true
+  value = azurerm_cosmosdb_account.account.connection_strings
 }
