@@ -2,11 +2,11 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "=2.97.0"
+      version = ">=3.20.0"
     }
   }
 
-  required_version = ">= 1.1.6"
+  required_version = ">= 1.2.8"
 }
 
 # Configure the Microsoft Azure Provider
@@ -16,15 +16,17 @@ provider "azurerm" {
 
 data "azuread_client_config" "current" {}
 
+data "azurerm_client_config" "current" {}
+
 resource "azurerm_resource_group" "main" {
-  name     = "demo-rg"
+  name     = "main-rg"
   location = "Australia East"
 }
 
-# resource "azuread_application" "main" {
-#   display_name = "main-app"
-#   owners       = [data.azuread_client_config.current.object_id]
-# }
+resource "azuread_application" "azapp" {
+  display_name = "az-app"
+  owners       = [data.azuread_client_config.current.object_id]
+}
 
 # module "aks-1" {
 #   source = "./modules/aks"
@@ -55,7 +57,7 @@ resource "random_string" "rndstr" {
   lower   = true
   upper   = false
   special = false
-  number  = true
+  numeric = true
 }
 
 # module "storage_container" {
@@ -109,11 +111,11 @@ resource "random_string" "rndstr" {
 #   # location = null
 # }
 
-# module "sp" {
-#   source = "./modules/sp"
-#   app    = azuread_application.main
-#   owners = [data.azuread_client_config.current.object_id]
-# }
+module "sp" {
+  source = "./modules/sp"
+  app    = azuread_application.azapp
+  owners = [data.azuread_client_config.current.object_id]
+}
 
 # resource "azurerm_role_assignment" "acr-contributer" {
 #   scope                = module.acr.id
@@ -121,9 +123,29 @@ resource "random_string" "rndstr" {
 #   principal_id         = module.sp.id
 # }
 
-module "mongodb" {
-  source = "./modules/cosmos_mongo"
+# module "mongodb" {
+#   source = "./modules/cosmos_mongo"
 
-  rg           = azurerm_resource_group.main
-  account_name = random_string.rndstr.result
+#   rg           = azurerm_resource_group.main
+#   account_name = random_string.rndstr.result
+# }
+
+module "key-vault" {
+  source    = "./modules/key-vault"
+  rg        = azurerm_resource_group.main
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  owner_id  = data.azuread_client_config.current.object_id
+}
+
+resource "azurerm_key_vault_access_policy" "kv-sp" {
+  key_vault_id = module.key-vault.vault-id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = module.sp.id
+
+  key_permissions = [
+    "Get",
+    "List",
+    "Encrypt",
+    "Decrypt"
+  ]
 }

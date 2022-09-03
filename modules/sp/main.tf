@@ -4,6 +4,6 @@ resource "azuread_service_principal" "sp" {
   owners                       = var.owners
 }
 
-resource "azuread_service_principal_password" "sp" {
+resource "azuread_service_principal_password" "spp" {
   service_principal_id = azuread_service_principal.sp.object_id
 }
