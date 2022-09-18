@@ -41,6 +41,10 @@ output "sp-password" {
   value = module.sp.password
 }
 
+output "tenant-id" {
+  value = data.azurerm_client_config.current.tenant_id
+}
+
 # output "cosmos-mongodb-connection-strings" {
 #   sensitive = true
 #   value     = module.mongodb.connection_strings
@@ -48,4 +52,8 @@ output "sp-password" {
 
 output "key-id" {
   value = module.key-vault.key-id
+}
+
+output "app-id" {
+  value = azuread_application.default.application_id
 }

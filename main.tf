@@ -6,7 +6,7 @@ terraform {
     }
   }
 
-  required_version = ">= 1.2.8"
+  required_version = ">= 1.2.7"
 }
 
 # Configure the Microsoft Azure Provider
@@ -18,13 +18,13 @@ data "azuread_client_config" "current" {}
 
 data "azurerm_client_config" "current" {}
 
-resource "azurerm_resource_group" "main" {
-  name     = "main-rg"
+resource "azurerm_resource_group" "default" {
+  name     = "default"
   location = "Australia East"
 }
 
-resource "azuread_application" "azapp" {
-  display_name = "az-app"
+resource "azuread_application" "default" {
+  display_name = "default"
   owners       = [data.azuread_client_config.current.object_id]
 }
 
@@ -50,7 +50,7 @@ resource "azuread_application" "azapp" {
 
 resource "random_string" "rndstr" {
   keepers = {
-    rg = azurerm_resource_group.main.name
+    rg = azurerm_resource_group.default.name
   }
 
   length  = 7
@@ -65,7 +65,7 @@ resource "random_string" "rndstr" {
 
 #   account = random_string.store_id.result
 #   name = "blob"
-#   rg = azurerm_resource_group.main
+#   rg = azurerm_resource_group.default
 # }
 
 # resource "azurerm_storage_blob" "test_blob" {
@@ -81,13 +81,13 @@ resource "random_string" "rndstr" {
 
 #   account = random_string.store_id_2.result
 #   name = "blob"
-#   rg = azurerm_resource_group.main
+#   rg = azurerm_resource_group.default
 # }
 
 # module "mssql" {
 #   source = "./modules/mssql"
 
-#   rg = azurerm_resource_group.main
+#   rg = azurerm_resource_group.default
 #   server_name = "mssql-toy1"
 #   database_name = "toydb1"
 #   admin_name = "toyadmin"
@@ -98,7 +98,7 @@ resource "random_string" "rndstr" {
 # module "appi" {
 #   source = "./modules/appinsights"
 
-#   rg = azurerm_resource_group.main
+#   rg = azurerm_resource_group.default
 #   name = "appi-1"
 #   location = var.resource_location
 # }
@@ -106,14 +106,14 @@ resource "random_string" "rndstr" {
 # module "acr" {
 #   source = "./modules/acr"
 
-#   rg   = azurerm_resource_group.main
+#   rg   = azurerm_resource_group.default
 #   name = "acr${random_string.rndstr.result}"
 #   # location = null
 # }
 
 module "sp" {
   source = "./modules/sp"
-  app    = azuread_application.azapp
+  app    = azuread_application.default
   owners = [data.azuread_client_config.current.object_id]
 }
 
@@ -126,13 +126,13 @@ module "sp" {
 # module "mongodb" {
 #   source = "./modules/cosmos_mongo"
 
-#   rg           = azurerm_resource_group.main
+#   rg           = azurerm_resource_group.default
 #   account_name = random_string.rndstr.result
 # }
 
 module "key-vault" {
   source    = "./modules/key-vault"
-  rg        = azurerm_resource_group.main
+  rg        = azurerm_resource_group.default
   tenant_id = data.azurerm_client_config.current.tenant_id
   owner_id  = data.azuread_client_config.current.object_id
 }
