@@ -38,7 +38,7 @@ output "sp-id" {
 
 output "sp-password" {
   sensitive = true
-  value = module.sp.password
+  value     = module.sp.password
 }
 
 output "tenant-id" {
@@ -51,9 +51,17 @@ output "tenant-id" {
 # }
 
 output "key-id" {
-  value = module.key-vault.key-id
+  value = module.kv.key-id
 }
 
 output "app-id" {
   value = azuread_application.default.application_id
+}
+
+output "aks-east" {
+  value = module.aks-east.aks_get_credential
+}
+
+output "aks-west" {
+  value = module.aks-west.aks_get_credential
 }

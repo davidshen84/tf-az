@@ -28,25 +28,53 @@ resource "azuread_application" "default" {
   owners       = [data.azuread_client_config.current.object_id]
 }
 
-# module "aks-1" {
-#   source = "./modules/aks"
+resource "azurerm_virtual_network" "default" {
+  name                = azurerm_resource_group.default.name
+  address_space       = ["10.0.0.0/8"]
+  location            = azurerm_resource_group.default.location
+  resource_group_name = azurerm_resource_group.default.name
+}
 
-#   prefix = "demo-1"
-#   location = var.resource_location
-#   cluster_name = "demo-1"
-#   pool_size = 3
-#   vm_size = var.aks_vm_size
+# resource "azurerm_subnet" "default" {
+#   name                 = "default"
+#   resource_group_name  = azurerm_resource_group.default.name
+#   virtual_network_name = azurerm_virtual_network.default.name
+#   address_prefixes     = ["10.1.0.0/16"]
 # }
 
-# module "aks-2" {
-#   source = "./modules/aks"
+resource "azurerm_subnet" "east" {
+  name                 = "east"
+  resource_group_name  = azurerm_resource_group.default.name
+  virtual_network_name = azurerm_virtual_network.default.name
+  address_prefixes     = ["10.10.0.0/16"]
+}
 
-#   prefix = "demo-2"
-#   location = "australiaeast"
-#   cluster_name = "demo-2"
-#   pool_size = 2
-#   vm_size = var.aks_vm_size
-# }
+resource "azurerm_subnet" "west" {
+  name                 = "west"
+  resource_group_name  = azurerm_resource_group.default.name
+  virtual_network_name = azurerm_virtual_network.default.name
+  address_prefixes     = ["10.20.0.0/16"]
+}
+
+module "aks-east" {
+  source = "./modules/aks"
+
+  name      = "east"
+  rg        = azurerm_resource_group.default
+  pool_size = var.aks_pool_size
+  vm_size   = var.aks_vm_size
+  subnet    = azurerm_subnet.east
+}
+
+module "aks-west" {
+  source = "./modules/aks"
+
+  name      = "west"
+  rg        = azurerm_resource_group.default
+  pool_size = var.aks_pool_size
+  vm_size   = var.aks_vm_size
+  subnet    = azurerm_subnet.west
+}
 
 resource "random_string" "rndstr" {
   keepers = {
@@ -112,7 +140,7 @@ resource "random_string" "rndstr" {
 # }
 
 module "sp" {
-  source = "./modules/sp"
+  source = "./modules/service-principle"
   app    = azuread_application.default
   owners = [data.azuread_client_config.current.object_id]
 }
@@ -130,7 +158,7 @@ module "sp" {
 #   account_name = random_string.rndstr.result
 # }
 
-module "key-vault" {
+module "kv" {
   source    = "./modules/key-vault"
   rg        = azurerm_resource_group.default
   tenant_id = data.azurerm_client_config.current.tenant_id
@@ -138,13 +166,12 @@ module "key-vault" {
 }
 
 resource "azurerm_key_vault_access_policy" "kv-sp" {
-  key_vault_id = module.key-vault.vault-id
+  key_vault_id = module.kv.vault-id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = module.sp.id
 
   key_permissions = [
     "Get",
-    "List",
     "Encrypt",
     "Decrypt"
   ]

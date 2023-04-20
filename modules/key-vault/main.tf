@@ -50,6 +50,25 @@ resource "azurerm_key_vault_access_policy" "default-policy" {
     "Verify",
     "WrapKey"
   ]
+
+  secret_permissions = [
+    "Backup",
+    "Delete",
+    "Get",
+    "List",
+    "Purge",
+    "Recover",
+    "Restore",
+    "Set"
+  ]
+
+  certificate_permissions = [
+    "List",
+    "Create",
+    "Get",
+    "Update",
+    "Delete"
+  ]
 }
 
 resource "azurerm_key_vault_key" "key" {
